@@ -3,11 +3,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   ChevronRight, File, FilePlus2, FolderPlus, Folder, FolderOpen, RefreshCw, Save,
   Trash2, X, Code2, Eye, FolderTree, ExternalLink, Loader2, RotateCw, ArrowLeft, PanelLeft,
+  Wand2,
 } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { fsDelete, fsList, fsMkdir, fsRead, fsWrite, homeDir, relPath, joinPath } from '../lib/bridge'
 import { fmtBytes, guessLang } from '../lib/util'
-import { Btn, Empty, Sheet, Segmented } from '../components/ui'
+import { Btn, Empty, Sheet, Segmented, SkillIcon } from '../components/ui'
+import { TEMPLATES, type Template } from '../lib/templates'
 import { CodeEditor } from '../components/CodeEditor'
 import type { FsEntry } from '../lib/types'
 
@@ -26,6 +28,7 @@ export function StudioScreen() {
   const [treeOpen, setTreeOpen] = useState(false)
   const [newFileOpen, setNewFileOpen] = useState(false)
   const [newFolderOpen, setNewFolderOpen] = useState(false)
+  const [tplOpen, setTplOpen] = useState(false)
   const [name, setName] = useState('')
   const store = useStore()
   const toast = store.toast
@@ -149,6 +152,9 @@ export function StudioScreen() {
           <span className="mono truncate" style={{ fontSize: 12.5 }}>{cwd === homeDir ? '~' : '~/' + relPath(cwd)}</span>
           <ChevronRight size={13} className="muted" />
         </button>
+        <Btn variant="ghost" icon size="sm" onClick={() => setTplOpen(true)} aria-label="Templates">
+          <Wand2 size={17} />
+        </Btn>
         <Btn variant="ghost" icon size="sm" onClick={() => void refresh(cwd)} aria-label="Refresh">
           <RefreshCw size={16} className={loading ? 'spin' : ''} />
         </Btn>
@@ -319,6 +325,32 @@ export function StudioScreen() {
         <input autoFocus className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="components" />
         <div className="tiny dim" style={{ marginTop: 8 }}>Created in {relPath(cwd)}</div>
       </Sheet>
+
+      <Sheet open={tplOpen} onClose={() => setTplOpen(false)} title="Start from a template">
+        <div className="small muted" style={{ marginBottom: 12 }}>
+          Creates a folder with working files, opens it in the editor and runs the preview.
+        </div>
+        <TemplateList
+          onPick={async (t: Template) => {
+            setTplOpen(false)
+            const folder = t.id === 'blank' ? 'page' : t.id === 'deck' ? 'slides' : t.id
+            let base = joinPath(cwd, folder)
+            let n = 2
+            while ((await fsList(base)).length) {
+              base = joinPath(cwd, `${folder}-${n++}`)
+            }
+            await fsMkdir(base)
+            for (const [file, content] of Object.entries(t.files)) {
+              await fsWrite(joinPath(base, file), content)
+            }
+            await refresh(base)
+            setCwd(base)
+            const entry = joinPath(base, t.entry)
+            await openFile(entry)
+            void buildPreview(entry)
+          }}
+        />
+      </Sheet>
     </div>
   )
 }
@@ -364,6 +396,26 @@ function FileTree({
         </div>
       ))}
       <div style={{ height: 20 }} />
+    </div>
+  )
+}
+
+
+function TemplateList({ onPick }: { onPick: (t: Template) => void }) {
+  return (
+    <div className="col" style={{ gap: 9 }}>
+      {TEMPLATES.map((t) => (
+        <button key={t.id} className="sugg" onClick={() => onPick(t)}>
+          <span className="tile" style={{ width: 38, height: 38, borderRadius: 12, background: t.color, display: 'grid', placeItems: 'center', color: '#fff', flex: 'none' }}>
+            <SkillIcon name={t.icon} size={18} />
+          </span>
+          <span className="grow">
+            <span style={{ display: 'block', fontSize: 13.5, fontWeight: 620 }}>{t.name}</span>
+            <span style={{ display: 'block', fontSize: 11.5, color: 'var(--ink-3)' }}>{t.desc}</span>
+          </span>
+          <ChevronRight size={16} className="muted" />
+        </button>
+      ))}
     </div>
   )
 }

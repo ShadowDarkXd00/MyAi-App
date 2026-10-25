@@ -19,7 +19,7 @@ It was built for live workshops: open the app, add a key, and in under a minute 
 | Screen | What it does |
 | --- | --- |
 | **Chat** | Streaming agent chat with tool calling, markdown, code blocks, reasoning view, per‑chat skills, model switcher, approval cards for risky actions, searchable chat history |
-| **Studio** | File tree, CodeMirror 6 editor (JS/TS/HTML/CSS/JSON/Python/Markdown), save/rename/delete, and a sandboxed live **Preview** that inlines sibling CSS/JS so pages run with no server |
+| **Studio** | File tree, CodeMirror 6 editor (JS/TS/HTML/CSS/JSON/Python/Markdown), save/rename/delete, 4 starter templates (blank, landing, canvas game, workshop slide deck) and a sandboxed live **Preview** that inlines sibling CSS/JS so pages run with no server |
 | **Terminal** | Real `/system/bin/sh` in the app workspace (APK) with ANSI colours, history, key bar and quick commands. Emulated shell in the browser preview |
 | **Skills** | 14 ready-made skill packs + create your own, import JSON/Markdown, install from a URL, per-chat stacking |
 | **Vault** | PIN-encrypted key store (PBKDF2 + AES-256-GCM), 10 provider presets + custom endpoints, connectivity test, auto-lock |
