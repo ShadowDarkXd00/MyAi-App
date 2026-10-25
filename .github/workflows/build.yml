@@ -1,0 +1,116 @@
+name: Build ShadowCode APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/f882b171-myai-app", "main"]
+    paths:
+      - "shadowcode/**"
+      - "android/**"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: shadowcode/package-lock.json
+
+      - name: Install web deps
+        working-directory: shadowcode
+        run: npm ci --no-audit --no-fund
+
+      - name: Type-check + build web bundle
+        working-directory: shadowcode
+        run: npm run build:android
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Provision Android SDK
+        run: |
+          set +e
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "Using SDK at $SDK"
+          ls "$SDK" 2>/dev/null
+          SM="$SDK/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SM" ] || SM="$(command -v sdkmanager)"
+          echo "sdkmanager: $SM"
+          if [ -x "$SM" ]; then
+            yes | "$SM" --licenses > /dev/null 2>&1
+            "$SM" --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" > /dev/null 2>&1
+          fi
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          ls "$SDK/platforms" 2>/dev/null
+          ls "$SDK/build-tools" 2>/dev/null
+          exit 0
+
+      - name: Ensure debug keystore
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=ShadowCode,C=IN" > /dev/null 2>&1
+          fi
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          set +e
+          gradle assembleRelease --no-daemon --console=plain > /tmp/gradle.log 2>&1
+          status=$?
+          tail -40 /tmp/gradle.log
+          if [ $status -ne 0 ]; then
+            echo "::error::Gradle build failed"
+            grep -nE "(^e: |error:|ERROR:|AAPT|Execution failed|What went wrong|> Task .* FAILED)" /tmp/gradle.log | head -25 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            grep -E "error:" -A2 /tmp/gradle.log | head -40 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
+          exit $status
+
+      - name: Rename artifacts
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/ShadowCode-v1.0.2.apk"
+          ls -la out
+          sha256sum out/*.apk | tee out/SHA256.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ShadowCode-APK
+          path: out/*
+          retention-days: 30
+
+      - name: Publish APK into the repository
+        run: |
+          git config user.name "shadowcode-ci"
+          git config user.email "ci@shadowcode.app"
+          mkdir -p apk
+          rm -f apk/ShadowCode-v1.0.0.apk
+          cp out/ShadowCode-v1.0.2.apk apk/ShadowCode-v1.0.2.apk
+          cp out/SHA256.txt apk/SHA256.txt
+          git add apk
+          git commit -m "build: ShadowCode v1.0.0 APK [skip ci]" || echo "no changes"
+          git push || echo "push skipped"
+
