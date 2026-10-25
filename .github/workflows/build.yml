@@ -9,6 +9,9 @@ on:
       - "android/**"
       - ".github/workflows/build.yml"
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -98,3 +101,15 @@ jobs:
           name: ShadowCode-APK
           path: out/*
           retention-days: 30
+
+      - name: Publish APK into the repository
+        run: |
+          git config user.name "shadowcode-ci"
+          git config user.email "ci@shadowcode.app"
+          mkdir -p apk
+          cp out/ShadowCode-v1.0.0.apk apk/ShadowCode-v1.0.0.apk
+          cp out/SHA256.txt apk/SHA256.txt
+          git add apk
+          git commit -m "build: ShadowCode v1.0.0 APK [skip ci]" || echo "no changes"
+          git push || echo "push skipped"
+
