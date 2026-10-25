@@ -1,11 +1,72 @@
 name: Build ShadowCode APK
+
 on:
   workflow_dispatch:
   push:
-    branches: ["arena/f882b171-myai-app"]
+    branches: ["arena/f882b171-myai-app", "main"]
+    paths:
+      - "shadowcode/**"
+      - "android/**"
+      - ".github/workflows/build.yml"
+
 jobs:
-  probe:
+  apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - run: echo "runner ok" && java -version 2>&1 | head -2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: shadowcode/package-lock.json
+
+      - name: Install web deps
+        working-directory: shadowcode
+        run: npm ci --no-audit --no-fund
+
+      - name: Type-check + build web bundle
+        working-directory: shadowcode
+        run: npm run build:android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" > /dev/null
+
+      - name: Ensure debug keystore
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=ShadowCode,C=IN" > /dev/null 2>&1
+          fi
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build release APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename artifacts
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/ShadowCode-v1.0.0.apk"
+          ls -la out
+          sha256sum out/*.apk | tee out/SHA256.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ShadowCode-APK
+          path: out/*
+          retention-days: 30
