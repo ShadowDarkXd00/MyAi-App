@@ -6,4 +6,5 @@ build/
 .gradle/
 local.properties
 android/app/build/
-android/app/src/main/assets/www/
+android/app/src/main/assets/*
+!android/app/src/main/assets/.gitkeep

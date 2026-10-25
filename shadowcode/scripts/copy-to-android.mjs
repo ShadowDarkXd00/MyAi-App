@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const src = resolve(here, '../dist')
-const dest = resolve(here, '../../android/app/src/main/assets/www')
+const dest = resolve(here, '../../android/app/src/main/assets')
 
 if (!existsSync(src)) {
   console.error('dist/ not found — run the build first')

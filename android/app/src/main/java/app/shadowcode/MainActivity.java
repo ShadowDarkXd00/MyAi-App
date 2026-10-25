@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
 
         assets = new WebViewAssetLoader.Builder()
                 .setDomain("appassets.androidplatform.net")
-                .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this, "www"))
+                .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this))
                 .build();
 
         web.setWebViewClient(new WebViewClient() {
