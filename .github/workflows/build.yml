@@ -92,7 +92,7 @@ jobs:
       - name: Rename artifacts
         run: |
           mkdir -p out
-          cp android/app/build/outputs/apk/release/app-release.apk "out/ShadowCode-v1.0.0.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "out/ShadowCode-v1.0.2.apk"
           ls -la out
           sha256sum out/*.apk | tee out/SHA256.txt
 
@@ -107,7 +107,8 @@ jobs:
           git config user.name "shadowcode-ci"
           git config user.email "ci@shadowcode.app"
           mkdir -p apk
-          cp out/ShadowCode-v1.0.0.apk apk/ShadowCode-v1.0.0.apk
+          rm -f apk/ShadowCode-v1.0.0.apk
+          cp out/ShadowCode-v1.0.2.apk apk/ShadowCode-v1.0.2.apk
           cp out/SHA256.txt apk/SHA256.txt
           git add apk
           git commit -m "build: ShadowCode v1.0.0 APK [skip ci]" || echo "no changes"

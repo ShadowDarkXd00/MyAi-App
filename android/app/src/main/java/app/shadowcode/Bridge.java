@@ -74,12 +74,20 @@ public class Bridge {
         this.web = web;
         this.vault = new Vault(activity);
 
-        File base = activity.getExternalFilesDir(null);
+        File base = null;
+        try {
+            base = activity.getExternalFilesDir(null);
+        } catch (Throwable ignored) {
+        }
         if (base == null) base = activity.getFilesDir();
         this.home = new File(base, "workspace");
-        //noinspection ResultOfMethodCallIgnored
-        home.mkdirs();
-        ensureDirs();
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            home.mkdirs();
+            ensureDirs();
+        } catch (Throwable t) {
+            ShadowApp.log("error", "workspace init: " + t);
+        }
     }
 
     private void ensureDirs() {
@@ -150,6 +158,17 @@ public class Bridge {
 
     /* ------------------------------------------------------------------ js */
 
+    /** UI-thread work must never escape as an exception — that kills the process. */
+    private void safe(Runnable r) {
+        activity.runOnUiThread(() -> {
+            try {
+                r.run();
+            } catch (Throwable t) {
+                ShadowApp.log("error", "ui action failed: " + t);
+            }
+        });
+    }
+
     private void callJs(String js) {
         if (web == null) return;
         web.post(() -> {
@@ -206,7 +225,7 @@ public class Bridge {
 
     @JavascriptInterface
     public void toast(final String msg) {
-        activity.runOnUiThread(() -> Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show());
+        safe(() -> Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show());
     }
 
     @JavascriptInterface
@@ -225,7 +244,7 @@ public class Bridge {
 
     @JavascriptInterface
     public void copy(String text) {
-        activity.runOnUiThread(() -> {
+        safe(() -> {
             ClipboardManager cm = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
             if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("ShadowCode", text));
         });
@@ -233,7 +252,7 @@ public class Bridge {
 
     @JavascriptInterface
     public void share(String text) {
-        activity.runOnUiThread(() -> {
+        safe(() -> {
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
             i.putExtra(Intent.EXTRA_TEXT, text);
@@ -243,7 +262,7 @@ public class Bridge {
 
     @JavascriptInterface
     public void openUrl(String url) {
-        activity.runOnUiThread(() -> {
+        safe(() -> {
             try {
                 activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
             } catch (Exception ignored) {
@@ -253,7 +272,7 @@ public class Bridge {
 
     @JavascriptInterface
     public void keepAwake(final boolean on) {
-        activity.runOnUiThread(() -> {
+        safe(() -> {
             if (on) activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             else activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         });
@@ -261,17 +280,21 @@ public class Bridge {
 
     @JavascriptInterface
     public void setSystemBars(String theme) {
-        if (activity instanceof MainActivity) ((MainActivity) activity).applyBarsFromBridge(theme);
+        safe(() -> {
+            if (activity instanceof MainActivity) ((MainActivity) activity).applyBarsFromBridge(theme);
+        });
     }
 
     @JavascriptInterface
     public void exitApp() {
-        if (activity instanceof MainActivity) ((MainActivity) activity).closeApp();
+        safe(() -> {
+            if (activity instanceof MainActivity) ((MainActivity) activity).closeApp();
+        });
     }
 
     @JavascriptInterface
     public void pickFile(String id) {
-        activity.runOnUiThread(() -> {
+        safe(() -> {
             if (activity instanceof MainActivity) ((MainActivity) activity).pickFileForBridge(id);
         });
     }
@@ -314,7 +337,7 @@ public class Bridge {
 
     @JavascriptInterface
     public void requestAllFiles() {
-        activity.runOnUiThread(() -> {
+        safe(() -> {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
                     Intent i = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
@@ -667,6 +690,76 @@ public class Bridge {
         }
         in.close();
         return bo.toString(StandardCharsets.UTF_8.name());
+    }
+
+    /* --------------------------------------------------------- diagnostics */
+
+    @JavascriptInterface
+    public void jsLog(String level, String msg) {
+        try {
+            ShadowApp.log("error".equals(level) ? "error" : "info", "web: " + (msg == null ? "" : msg));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @JavascriptInterface
+    public String crashLog() {
+        try {
+            return ShadowApp.readLastCrash();
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    @JavascriptInterface
+    public void clearCrashLog() {
+        try {
+            ShadowApp.clearCrash();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @JavascriptInterface
+    public String runtimeLog() {
+        try {
+            return ShadowApp.getLog();
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    @JavascriptInterface
+    public String webViewInfo() {
+        try {
+            return WebSettings.getDefaultUserAgent(activity);
+        } catch (Throwable t) {
+            return "unknown";
+        }
+    }
+
+    @JavascriptInterface
+    public String diagnostics() {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("device", (Build.MANUFACTURER + " " + Build.MODEL).trim());
+            o.put("android", Build.VERSION.RELEASE);
+            o.put("sdk", Build.VERSION.SDK_INT);
+            o.put("webview", webViewInfo());
+            o.put("home", home.getAbsolutePath());
+            o.put("workspaceWritable", home.isDirectory() && home.canWrite());
+            o.put("vaultExists", vault.exists());
+            o.put("vaultUnlocked", vault.unlocked());
+            o.put("package", activity.getPackageName());
+            try {
+                o.put("version", activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName);
+            } catch (Throwable ignored) {
+            }
+            o.put("crash", ShadowApp.readLastCrash());
+            o.put("log", ShadowApp.getLog());
+        } catch (Throwable t) {
+            return "{\"error\":\"" + t.getClass().getSimpleName() + "\"}";
+        }
+        return o.toString();
     }
 
     /* --------------------------------------------------------------- vault */

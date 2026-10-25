@@ -87,7 +87,7 @@ export function StudioScreen() {
     const dir = path.split('/').slice(0, -1).join('/')
     // inline sibling css/js so the sandboxed iframe works without a server
     const linkRe = /<link[^>]+href=["']([^"']+\.css)["'][^>]*>/gi
-    const cssMatches = [...html.matchAll(linkRe)]
+    const cssMatches = matchAllSafe(html, linkRe)
     for (const m of cssMatches) {
       const href = m[1]
       if (/^https?:/.test(href)) continue
@@ -95,7 +95,7 @@ export function StudioScreen() {
       if (cssText) html = html.replace(m[0], `<style>${cssText}</style>`)
     }
     const scriptRe = /<script[^>]+src=["']([^"']+\.js)["'][^>]*>\s*<\/script>/gi
-    const jsMatches = [...html.matchAll(scriptRe)]
+    const jsMatches = matchAllSafe(html, scriptRe)
     for (const m of jsMatches) {
       const src = m[1]
       if (/^https?:/.test(src)) continue
@@ -418,4 +418,19 @@ function TemplateList({ onPick }: { onPick: (t: Template) => void }) {
       ))}
     </div>
   )
+}
+
+
+/** matchAll() only exists on newer WebViews — loop exec instead. */
+function matchAllSafe(input: string, re: RegExp): RegExpExecArray[] {
+  const out: RegExpExecArray[] = []
+  const flags = re.flags.includes('g') ? re.flags : re.flags + 'g'
+  const rx = new RegExp(re.source, flags)
+  let m: RegExpExecArray | null
+  let guard = 0
+  while ((m = rx.exec(input)) !== null && guard++ < 500) {
+    out.push(m)
+    if (m[0] === '') rx.lastIndex++
+  }
+  return out
 }

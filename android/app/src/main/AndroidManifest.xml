@@ -17,6 +17,7 @@
         android:maxSdkVersion="28" />
 
     <application
+        android:name=".ShadowApp"
         android:allowBackup="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"

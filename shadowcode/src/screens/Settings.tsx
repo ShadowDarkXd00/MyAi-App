@@ -10,6 +10,7 @@ import { useStore, ACCENTS } from '../lib/store'
 import { Btn, Divider, Field, Sheet, Toggle, Empty } from '../components/ui'
 import { PinPad, PinField, PinDots } from '../components/PinPad'
 import { deviceInfo, isNative, copyText, pickFile, relPath } from '../lib/bridge'
+import { buildReport, clearCrashes } from '../lib/diagnostics'
 import { PRESETS, testProvider, providerColor } from '../lib/providers'
 import { clamp, fmtBytes } from '../lib/util'
 import type { Provider, ProviderKind } from '../lib/types'
@@ -413,7 +414,7 @@ export function SettingsScreen() {
                 <div className="card" style={{ padding: 18, textAlign: 'center' }}>
                   <div className="mark lg" style={{ margin: '0 auto 12px' }}><Sparkles size={30} /></div>
                   <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.03em' }}>ShadowCode</div>
-                  <div className="small muted" style={{ marginTop: 2 }}>v1.0.0 · agent studio for Android</div>
+                  <div className="small muted" style={{ marginTop: 2 }}>v1.0.2 · agent studio for Android</div>
                   <div className="row" style={{ gap: 6, justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' }}>
                     <span className="chip tiny"><Zap size={11} /> on-device agent</span>
                     <span className="chip tiny"><ShieldCheck size={11} /> encrypted keys</span>
@@ -428,6 +429,46 @@ export function SettingsScreen() {
                   <Row label="Android" value={deviceInfo.android} />
                   <Row label="SDK" value={String(deviceInfo.sdk)} />
                   <Row label="Package" value={deviceInfo.pkg} />
+                </div>
+
+                <div className="card" style={{ padding: 16 }}>
+                  <div className="label" style={{ marginBottom: 8 }}>Diagnostics</div>
+                  <div className="small muted" style={{ marginBottom: 10 }}>
+                    Something misbehaving? Copy a report — device, WebView, logs and the last crash — and send it on.
+                  </div>
+                  <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <Btn
+                      size="sm"
+                      variant="accent"
+                      onClick={async () => {
+                        await copyText(buildReport())
+                        toast('Report copied to clipboard', 'ok')
+                      }}
+                    >
+                      <Copy size={14} /> Copy report
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      onClick={async () => {
+                        await clearCrashes()
+                        toast('Logs cleared', 'ok')
+                      }}
+                    >
+                      <Trash2 size={14} /> Clear logs
+                    </Btn>
+                    <Btn
+                      size="sm"
+                      onClick={() => {
+                        const w = window.open('', '_blank')
+                        if (w) {
+                          w.document.write('<pre style="white-space:pre-wrap;font:12px monospace">' + buildReport().replace(/</g, '&lt;') + '</pre>')
+                          w.document.title = 'ShadowCode diagnostics'
+                        } else toast('Popup blocked — use Copy report', 'bad')
+                      }}
+                    >
+                      <Eye size={14} /> View
+                    </Btn>
+                  </div>
                 </div>
 
                 <div className="card" style={{ padding: 16 }}>
