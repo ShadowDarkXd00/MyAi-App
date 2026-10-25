@@ -641,7 +641,7 @@ export const vault = {
 const CWD_KEY = 'shadowcode:cwd'
 
 function emulatedShell(command: string, cwd: string): ExecResult {
-  const c = (localStorage.getItem(CWD_KEY) || homeDir) as string
+  const c = (cwd && cwd !== '.' ? cwd : (localStorage.getItem(CWD_KEY) || homeDir)) as string
   const tokens = command.trim().match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []
   const cmd = tokens[0] || ''
   const args = tokens.slice(1).map((t) => t.replace(/^['"]|['"]$/g, ''))

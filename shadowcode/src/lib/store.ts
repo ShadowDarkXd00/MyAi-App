@@ -478,7 +478,6 @@ export const useStore = create<State>((set, get) => ({
       clearTimeout(flushTimer)
       flush()
       stopFlags.delete(sessionId)
-      const live = get().live
       if (finalError) {
         const msgs = get().messages[sessionId] || []
         set({
@@ -493,7 +492,6 @@ export const useStore = create<State>((set, get) => ({
       }
       currentStreamId = null
       set({ busy: false, live: null, approvals: [] })
-      void (live ? null : null)
       const finalMsgs = get().messages[sessionId] || []
       void persistSession(sessionId, finalMsgs)
       schedulePersist(get)

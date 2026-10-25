@@ -259,7 +259,7 @@ export function ChatScreen() {
       </div>
 
       {/* ------------------------------------------------------- side panel (desktop) */}
-      <div className="card hide desk-panel" style={{ margin: '0 12px 12px', overflow: 'hidden', display: 'none', flexDirection: 'column' }}>
+      <div className="card hide desk-panel" style={{ margin: '0 12px 12px', overflow: 'hidden', flexDirection: 'column' }}>
         <SessionsPanel onClose={() => setSessionsOpen(false)} />
       </div>
 
@@ -310,7 +310,7 @@ function SessionHeader({
           <div className="tiny dim truncate">{providerName ? `${providerName} · ${model || 'no model'}` : 'No provider connected'}</div>
         </div>
       </button>
-      <button className="btn ghost icon sm" onClick={onOpenSessions} aria-label="Chats">
+      <button className="btn ghost icon sm" onClick={onOpenSessions} aria-label="Chats" style={{ position: 'relative' }}>
         <MessageSquare size={18} />
         {count > 0 && <span className="badge" style={{ position: 'absolute', transform: 'translate(12px,-12px)', fontSize: 9 }}>{count > 9 ? '9+' : count}</span>}
       </button>
@@ -561,6 +561,17 @@ function SessionSheet({
               </div>
             </div>
             <ChevronRight size={15} className="muted" />
+          </button>
+          <button
+            className="btn ghost icon sm"
+            style={{ color: 'var(--ink-4)' }}
+            onClick={() => {
+              const t = prompt('Rename chat', s.title)
+              if (t && t.trim()) useStore.getState().renameSession(s.id, t.trim())
+            }}
+            aria-label="Rename chat"
+          >
+            <Pencil size={13} />
           </button>
           <button
             className="btn ghost icon sm"

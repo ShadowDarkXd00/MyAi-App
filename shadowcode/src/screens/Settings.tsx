@@ -432,6 +432,7 @@ export function SettingsScreen() {
       </div>
 
       <ProviderSheet
+        key={editing?.id || 'new'}
         open={addOpen}
         initial={editing}
         onClose={() => setAddOpen(false)}

@@ -186,8 +186,15 @@ public class Bridge {
             o.put("native", true);
             o.put("home", home.getAbsolutePath());
         } catch (Exception e) {
-            o.put("native", true);
-            o.put("home", home.getAbsolutePath());
+            try {
+                o.put("native", true);
+                o.put("home", home.getAbsolutePath());
+                o.put("model", Build.MODEL);
+                o.put("android", Build.VERSION.RELEASE);
+                o.put("sdk", Build.VERSION.SDK_INT);
+                o.put("pkg", activity.getPackageName());
+            } catch (Exception ignored) {
+            }
         }
         return o.toString();
     }
