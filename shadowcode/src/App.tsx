@@ -234,12 +234,23 @@ function Nav() {
   const tab = useStore((s) => s.tab)
   const setTab = useStore((s) => s.setTab)
   const idx = NAV.findIndex((n) => n.id === tab)
+  const pill = useRef<HTMLDivElement>(null)
+  const [itemW, setItemW] = useState(62)
+  useEffect(() => {
+    const measure = () => {
+      const w = pill.current?.clientWidth || 0
+      if (w > 0) setItemW(Math.max(48, (w - 12) / NAV.length))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
   return (
     <div className="navwrap">
-      <div className="navpill">
+      <div className="navpill" ref={pill}>
         <motion.div
           className="navblob"
-          animate={{ left: 6 + idx * 62, width: 62 }}
+          animate={{ left: 6 + idx * itemW, width: itemW }}
           transition={{ type: 'spring', stiffness: 420, damping: 34 }}
         />
         {NAV.map((n) => (

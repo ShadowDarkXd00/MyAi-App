@@ -43,11 +43,16 @@ Writes, deletes, shell commands and skill installs ask for permission first — 
 
 ## Install the APK
 
-1. Grab the latest **`ShadowCode-v1.0.0.apk`** from this repo (or the build artifact).
-2. On the phone: allow installs from your file manager, tap the APK, install.
-3. Open → set a 6-digit vault PIN → paste an API key → build.
+**Download:** [`apk/ShadowCode-v1.0.0.apk`](apk/ShadowCode-v1.0.0.apk) · ~1.3 MB · signed (APK Signature Scheme v2/v3)
+**Checksum:** [`apk/SHA256.txt`](apk/SHA256.txt)
 
-Requirements: Android 8.0+ (API 26), ~6 MB installed, no Google services needed.
+1. Copy the APK to the phone (or download it there).
+2. Tap it, allow install from this source, install.
+3. Open → set a 6-digit vault PIN → paste an API key → start building.
+
+Requirements: Android 8.0+ (API 26), ~4 MB installed, no Google services needed.
+
+> Every push rebuilds this file from source in GitHub Actions (`Build ShadowCode APK`) and commits it back to the repo, so the APK always matches the code in this branch.
 
 ### Supported providers
 
@@ -71,6 +76,17 @@ cd ../android
 gradle assembleRelease         # needs JDK 17 + Android SDK 35
 # → app/build/outputs/apk/release/app-release.apk
 ```
+
+### Tests
+
+```bash
+cd shadowcode
+npm run test:ui     # 22 checks: every screen, onboarding, PIN pad, vault
+                    # encryption round-trip, agent tool-loop, terminal bridge
+```
+
+The harness boots the real production bundle in jsdom against a simulated native
+bridge — no device or emulator required.
 
 No local SDK? Push a commit — `.github/workflows/build.yml` provisions JDK 17 + SDK 35, builds the web bundle, compiles the APK and uploads `ShadowCode-APK` as an artifact. It also works from **Actions → Build ShadowCode APK → Run workflow**.
 
