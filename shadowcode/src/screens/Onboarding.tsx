@@ -136,6 +136,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                 </div>
                 <div className="spacer" style={{ minHeight: 10 }} />
                 <PinPad
+                  key={step}
                   length={6}
                   error={err}
                   onDone={(v) => {

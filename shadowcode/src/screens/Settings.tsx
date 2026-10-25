@@ -388,6 +388,18 @@ export function SettingsScreen() {
                 </div>
                 <div className="tiny dim" style={{ marginBottom: 16 }}>Backups never include API keys.</div>
 
+                {isNative && (
+                  <div className="banner info" style={{ marginBottom: 14 }}>
+                    <Info size={15} style={{ flex: 'none', marginTop: 1 }} />
+                    <div>
+                      <b>Workshop tip:</b> grant "All files access" so the agent can read slides, datasets or assets straight from Downloads.
+                      <button className="btn sm line" style={{ marginTop: 8 }} onClick={() => (window as any).ShadowNative?.requestAllFiles?.()}>
+                        <HardDrive size={13} /> Open storage permission
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <Divider />
                 <Row label="Chats" value={`${useStore.getState().sessions.length}`} />
                 <Row label="Skills installed" value={`${useStore.getState().skills.length}`} />
@@ -649,6 +661,7 @@ function ChangePinSheet({ open, onClose }: { open: boolean; onClose: () => void 
         <>
           <div className="small muted" style={{ textAlign: 'center', marginBottom: 16 }}>Enter your current PIN</div>
           <PinPad
+            key="old"
             length={6}
             error={err}
             busy={busy}
@@ -670,13 +683,14 @@ function ChangePinSheet({ open, onClose }: { open: boolean; onClose: () => void 
       {step === 'new' && (
         <>
           <div className="small muted" style={{ textAlign: 'center', marginBottom: 16 }}>Choose a new 6-digit PIN</div>
-          <PinPad length={6} onDone={(v) => { setNewPin(v); setStep('confirm') }} />
+          <PinPad key="new" length={6} onDone={(v) => { setNewPin(v); setStep('confirm') }} />
         </>
       )}
       {step === 'confirm' && (
         <>
           <div className="small muted" style={{ textAlign: 'center', marginBottom: 16 }}>Repeat the new PIN</div>
           <PinPad
+            key="confirm"
             length={6}
             error={err}
             onDone={async (v) => {

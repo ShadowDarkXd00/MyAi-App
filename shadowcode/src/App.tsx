@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Code2, KeyRound, Lock, MessageSquare, SlidersHorizontal, Sparkles, SquareTerminal,
@@ -101,11 +101,13 @@ export default function App() {
               transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
               style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
             >
-              {tab === 'chat' && <ChatScreen />}
-              {tab === 'studio' && <StudioScreen />}
-              {tab === 'terminal' && <TerminalScreen />}
-              {tab === 'skills' && <SkillsScreen />}
-              {tab === 'settings' && <SettingsScreen />}
+              <Boundary key={tab}>
+                {tab === 'chat' && <ChatScreen />}
+                {tab === 'studio' && <StudioScreen />}
+                {tab === 'terminal' && <TerminalScreen />}
+                {tab === 'skills' && <SkillsScreen />}
+                {tab === 'settings' && <SettingsScreen />}
+              </Boundary>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -161,19 +163,37 @@ export default function App() {
       {vaultExists && locked && unlockDismissed && (
         <button
           onClick={() => { setUnlockDismissed(false); setTab('settings') }}
-          className="card"
-          style={{
-            position: 'fixed', zIndex: 50, right: 14,
-            top: 'calc(var(--safe-t) + 56px)',
-            padding: '7px 12px', borderRadius: 999, display: 'flex', gap: 7, alignItems: 'center',
-            fontSize: 11.5, fontWeight: 600, color: 'var(--warn)', maxWidth: 190,
-          }}
+          className="toast"
+          style={{ position: 'fixed', zIndex: 50, left: '50%', transform: 'translateX(-50%)', bottom: 'calc(var(--safe-b) + 90px)', color: 'var(--warn)', fontSize: 12 }}
         >
-          <Unlock size={12} /> Unlock vault
+          <Unlock size={13} /> Unlock vault to use your keys
         </button>
       )}
     </div>
   )
+}
+
+class Boundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null }
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+  componentDidCatch(error: Error) {
+    console.error('screen crashed', error)
+  }
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="screen center" style={{ padding: 24, gap: 12, textAlign: 'center' }}>
+        <div className="mark md"><X size={22} /></div>
+        <div style={{ fontWeight: 650 }}>This screen hit a snag</div>
+        <div className="small muted" style={{ maxWidth: 300 }}>
+          {String(this.state.error?.message || 'Unknown error')}
+        </div>
+        <button className="btn accent" onClick={() => this.setState({ error: null })}>Try again</button>
+      </div>
+    )
+  }
 }
 
 function TopBar() {
@@ -182,6 +202,7 @@ function TopBar() {
   const vaultExists = useStore((s) => s.vaultExists)
   const locked = useStore((s) => s.vaultLocked)
   void tab
+  const setTab = useStore((s) => s.setTab)
   const hasKey = providers.length > 0 && !locked
   return (
     <div className="topbar">
@@ -192,8 +213,9 @@ function TopBar() {
           <div className="brand-sub">{isNative ? `${deviceInfo.model} · on-device` : 'preview build'}</div>
         </div>
       </div>
-      <div
+      <button
         className="chip"
+        onClick={() => setTab('settings')}
         style={{
           borderColor: hasKey ? 'color-mix(in oklab, var(--ok) 38%, transparent)' : 'var(--line)',
           color: hasKey ? 'var(--ok)' : 'var(--ink-3)',
@@ -203,7 +225,7 @@ function TopBar() {
       >
         {hasKey ? <Zap size={11} /> : vaultExists && locked ? <Lock size={11} /> : <KeyRound size={11} />}
         {hasKey ? `${providers.length} key${providers.length > 1 ? 's' : ''}` : vaultExists && locked ? 'locked' : 'no key'}
-      </div>
+      </button>
     </div>
   )
 }

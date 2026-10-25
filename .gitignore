@@ -8,3 +8,4 @@ local.properties
 android/app/build/
 android/app/src/main/assets/*
 !android/app/src/main/assets/.gitkeep
+.tmp/

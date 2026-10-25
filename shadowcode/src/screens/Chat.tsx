@@ -3,9 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowDown, ArrowUpRight, Bot, Check, ChevronDown, ChevronRight, CircleSlash2, Copy,
   Loader2, MessageSquare, Plus, Search, Send, Sparkles, SquareTerminal, Trash2, Wand2,
-  Wrench, X, Pencil, SlidersHorizontal, KeyRound, PanelTopClose, ShieldAlert,
+  Wrench, X, Pencil, SlidersHorizontal, KeyRound, Eye, PanelTopClose, ShieldAlert,
 } from 'lucide-react'
 import { useStore } from '../lib/store'
+import { PreviewSheet } from '../components/PreviewSheet'
 import { Markdown } from '../components/Markdown'
 import { Btn, Sheet, SkillIcon, useAutoGrow, Empty } from '../components/ui'
 import { copyText, fsRead, homeDir, isNative, relPath } from '../lib/bridge'
@@ -39,6 +40,8 @@ export function ChatScreen() {
   const [modelOpen, setModelOpen] = useState(false)
   const [skillOpen, setSkillOpen] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const agentPreview = useStore((s) => s.preview)
   const listRef = useRef<HTMLDivElement>(null)
   const ta = useAutoGrow()
 
@@ -197,7 +200,7 @@ export function ChatScreen() {
         </AnimatePresence>
 
         <div className="composer-wrap">
-          {(activeSkills.length > 0 || !provider) && (
+          {(activeSkills.length > 0 || !provider || agentPreview) && (
             <div className="quickrow" style={{ padding: '0 4px 8px' }}>
               {!provider && (
                 <button className="chip" onClick={() => setTab('settings')} style={{ borderColor: 'color-mix(in oklab, var(--warn) 45%, transparent)', color: 'var(--warn)' }}>
@@ -209,6 +212,15 @@ export function ChatScreen() {
                   <SkillIcon name={s.icon} size={12} /> {s.name} <X size={11} />
                 </button>
               ))}
+              {agentPreview && (
+                <button
+                  className="chip on"
+                  onClick={() => setPreviewOpen(true)}
+                  style={{ borderColor: 'color-mix(in oklab, var(--a2) 50%, transparent)', color: 'var(--a2)' }}
+                >
+                  <Eye size={12} /> Preview · {agentPreview.name.split('/').pop()}
+                </button>
+              )}
             </div>
           )}
 
@@ -275,6 +287,9 @@ export function ChatScreen() {
           setSessionsOpen(false)
         }}
       />
+      {agentPreview && (
+        <PreviewSheet open={previewOpen} onClose={() => setPreviewOpen(false)} html={agentPreview.html} title={agentPreview.name} />
+      )}
       <ModelSheet open={modelOpen} onClose={() => setModelOpen(false)} onManage={() => { setModelOpen(false); setTab('settings') }} />
       <SkillSheet
         open={skillOpen}

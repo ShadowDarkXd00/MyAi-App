@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Delete, ShieldCheck } from 'lucide-react'
 import { haptic } from '../lib/bridge'
@@ -31,16 +31,29 @@ export function PinPad({
   submitLabel?: string
 }) {
   const [pin, setPin] = useState('')
+  const fired = useRef(false)
 
   useEffect(() => {
-    if (error) setPin('')
+    if (error) {
+      setPin('')
+      fired.current = false
+    }
   }, [error])
 
   useEffect(() => {
-    if (pin.length === length) {
-      const t = setTimeout(() => onDone(pin), 120)
-      return () => clearTimeout(t)
+    if (pin.length < length) {
+      fired.current = false
+      return
     }
+    // onDone changes identity on every parent render — fire exactly once per entry
+    if (fired.current) return
+    fired.current = true
+    const t = setTimeout(() => {
+      onDone(pin)
+      fired.current = false
+      setPin('')
+    }, 120)
+    return () => clearTimeout(t)
   }, [pin, length, onDone])
 
   const press = (n: string) => {

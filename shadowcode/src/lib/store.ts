@@ -180,6 +180,7 @@ export const useStore = create<State>((set, get) => ({
   online: true,
 
   boot: async () => {
+    try {
     let settings = DEFAULT_SETTINGS
     let sessions: Session[] = []
     let skills: Skill[] = []
@@ -217,6 +218,10 @@ export const useStore = create<State>((set, get) => ({
     applyTheme(settings)
     if (currentSessionId && !sessions.find((s) => s.id === currentSessionId)) set({ currentSessionId: sessions[0]?.id || null })
     schedulePersist(get)
+    } catch (e) {
+      console.error('boot failed', e)
+      set({ booted: true, skills: mergeCatalog([]) })
+    }
   },
 
   setTab: (t) => set({ tab: t }),
@@ -237,6 +242,7 @@ export const useStore = create<State>((set, get) => ({
 
   newSession: (opts) => {
     const settings = get().settings
+    const inherited = opts?.skillIds ?? get().sessions.find((x) => x.id === get().currentSessionId)?.skillIds ?? []
     const session: Session = {
       id: uid('c'),
       title: 'New chat',
@@ -244,7 +250,7 @@ export const useStore = create<State>((set, get) => ({
       updatedAt: Date.now(),
       providerId: settings.activeProviderId,
       model: settings.activeModel,
-      skillIds: opts?.skillIds || [],
+      skillIds: inherited,
       workspace: homeDir,
     }
     set({ sessions: [session, ...get().sessions], currentSessionId: session.id, tab: 'chat' })
@@ -458,6 +464,7 @@ export const useStore = create<State>((set, get) => ({
                   toolResults: calls.map((c) => c.result!),
                   error: !!finalError,
                   stopped: res.stopped,
+                  reasoning: live?.reasoning?.trim() || undefined,
                   content:
                     m.content ||
                     (finalError
