@@ -1,0 +1,11 @@
+name: Build ShadowCode APK
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/f882b171-myai-app"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "runner ok" && java -version 2>&1 | head -2
