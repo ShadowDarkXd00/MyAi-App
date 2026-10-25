@@ -9,7 +9,9 @@
                 android:type="linear" />
         </shape>
     </item>
-    <item android:gravity="center">
-        <bitmap android:src="@drawable/logo_splash" android:gravity="center" />
-    </item>
+    <item
+        android:width="128dp"
+        android:height="128dp"
+        android:gravity="center"
+        android:drawable="@drawable/logo_splash" />
 </layer-list>

@@ -70,7 +70,21 @@ jobs:
 
       - name: Build release APK
         working-directory: android
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set +e
+          gradle assembleRelease --no-daemon --console=plain > /tmp/gradle.log 2>&1
+          status=$?
+          tail -40 /tmp/gradle.log
+          if [ $status -ne 0 ]; then
+            echo "::error::Gradle build failed"
+            grep -nE "(^e: |error:|ERROR:|AAPT|Execution failed|What went wrong|> Task .* FAILED)" /tmp/gradle.log | head -25 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            grep -E "error:" -A2 /tmp/gradle.log | head -40 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+          fi
+          exit $status
 
       - name: Rename artifacts
         run: |

@@ -44,7 +44,9 @@ android {
     }
 
     packaging {
-        resources.excludes += ['META-INF/*']
+        resources {
+            excludes += ['META-INF/*']
+        }
     }
 
     lint {
