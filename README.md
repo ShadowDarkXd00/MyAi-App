@@ -43,7 +43,7 @@ Writes, deletes, shell commands and skill installs ask for permission first — 
 
 ## Install the APK
 
-**Download:** [`apk/ShadowCode-v1.0.0.apk`](apk/ShadowCode-v1.0.0.apk) · ~1.3 MB · signed (APK Signature Scheme v2/v3)
+**Download:** [`apk/ShadowCode-v1.0.2.apk`](apk/ShadowCode-v1.0.2.apk) · ~1.3 MB · signed (APK Signature Scheme v2/v3)
 **Checksum:** [`apk/SHA256.txt`](apk/SHA256.txt)
 
 1. Copy the APK to the phone (or download it there).
@@ -53,6 +53,16 @@ Writes, deletes, shell commands and skill installs ask for permission first — 
 Requirements: Android 8.0+ (API 26), ~4 MB installed, no Google services needed.
 
 > Every push rebuilds this file from source in GitHub Actions (`Build ShadowCode APK`) and commits it back to the repo, so the APK always matches the code in this branch.
+
+### If it ever refuses to start
+
+v1.0.2 is built to fail loudly instead of silently:
+
+* A **fatal error screen** appears (with a *Copy report* button) if the native shell cannot start.
+* A **bootstrap watchdog** built from plain ES5 shows the WebView user-agent if the UI never mounts.
+* **Settings → About → Diagnostics** copies device, WebView version, runtime log and the last crash — nothing is uploaded, you paste it wherever you want.
+
+The most common cause on older phones is an out-of-date **Android System WebView**. Update it from the Play Store (or *Settings → Apps → Android System WebView → Update*) and relaunch.
 
 ### Supported providers
 
@@ -90,7 +100,7 @@ bridge — no device or emulator required.
 
 No local SDK? Push a commit — `.github/workflows/build.yml` provisions JDK 17 + SDK 35, builds the web bundle, compiles the APK and uploads `ShadowCode-APK` as an artifact. It also works from **Actions → Build ShadowCode APK → Run workflow**.
 
-Build tuning: `compileSdk 35`, `minSdk 26`, `targetSdk 35`, Java 17, single WebView, ~1.2 MB web bundle.
+Build tuning: `compileSdk 35`, `minSdk 26`, `targetSdk 34`, Java 17, single WebView, ~1.2 MB web bundle emitted as a **classic IIFE** (no `type="module"`) with ES2019 runtime shims, so a WebView that never updated still runs the app.
 
 ## Security model
 
