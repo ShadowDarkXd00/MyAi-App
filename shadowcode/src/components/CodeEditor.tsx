@@ -111,7 +111,7 @@ export function CodeEditor({
     const v = view.current
     if (!v) return
     const cur = v.state.doc.toString()
-    if (cur !== value && Math.abs(cur.length - value.length) > 0) {
+    if (cur !== value && !v.hasFocus) {
       v.dispatch({ changes: { from: 0, to: cur.length, insert: value } })
     }
   }, [value])

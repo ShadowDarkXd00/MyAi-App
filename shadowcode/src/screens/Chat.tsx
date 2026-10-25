@@ -408,7 +408,12 @@ function Message({ msg, index }: { msg: Msg; index: number; showTools?: boolean 
       {!!msg.toolResults?.length && (
         <div className="col" style={{ gap: 7, marginBottom: msg.content ? 10 : 0 }}>
           {msg.toolResults.map((r) => (
-            <ToolCard key={r.id} call={{ id: r.id, name: r.name, args: {} }} result={r} status={r.ok ? 'ok' : 'error'} />
+            <ToolCard
+              key={r.id}
+              call={msg.toolCalls?.find((c) => c.id === r.id) || { id: r.id, name: r.name, args: {} }}
+              result={r}
+              status={r.ok ? 'ok' : 'error'}
+            />
           ))}
         </div>
       )}
@@ -696,9 +701,6 @@ function CreateSkillInline({ onDone, onInstall, onImport }: { onDone: () => void
   const [name, setName] = useState('')
   const [desc, setDesc] = useState('')
   const [prompt, setPrompt] = useState('')
-  const installSkill = useStore((s) => s.installSkill)
-  const { normaliseSkill } = useMemo(() => ({ normaliseSkill: null as any }), [])
-  void normaliseSkill
   void onImport
   return (
     <div className="card" style={{ padding: 14, marginTop: 12 }}>
@@ -724,19 +726,6 @@ function CreateSkillInline({ onDone, onInstall, onImport }: { onDone: () => void
         disabled={!name.trim() || !prompt.trim()}
         onClick={() => {
           onInstall({
-            id: 'sk_' + Date.now().toString(36),
-            name,
-            desc,
-            icon: 'sparkles',
-            category: 'My skills',
-            prompt,
-            enabled: true,
-            author: 'You',
-            version: '1.0.0',
-            createdAt: Date.now(),
-            color: '#7c5cff',
-          })
-          installSkill({
             id: 'sk_' + Date.now().toString(36),
             name,
             desc,

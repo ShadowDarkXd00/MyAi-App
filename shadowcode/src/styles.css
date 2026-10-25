@@ -993,3 +993,9 @@ html[data-theme='light'] .codeblock pre { color: #d7dbe8; }
   .desk-panel { display: flex !important; margin: 0 14px 14px 0 !important; }
   .msglist { padding-right: 6px; }
 }
+
+/* CodeMirror surface */
+.editorhost .cm-editor { background: transparent !important; }
+.editorhost .cm-gutters { background: transparent !important; }
+.editorhost .cm-activeLine { background: color-mix(in oklab, var(--a1) 9%, transparent) !important; }
+.editorhost .cm-selectionBackground { background: color-mix(in oklab, var(--a1) 30%, transparent) !important; }

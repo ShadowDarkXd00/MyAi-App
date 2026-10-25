@@ -258,12 +258,15 @@ export const TOOLS: Record<string, ToolDef> = {
 /* ---------------------------------------------------------- schema helpers */
 export function activeToolSchemas(skillIds: string[], allSkills: Skill[]): ToolSchema[] {
   const allow = new Set<string>()
+  let restricted = false
   for (const s of allSkills) {
     if (!skillIds.includes(s.id)) continue
-    for (const t of s.tools || []) allow.add(t)
+    if (!Array.isArray(s.tools)) continue
+    restricted = true
+    for (const t of s.tools) allow.add(t)
   }
-  // default: all tools available unless a skill narrows them
-  const names = allow.size ? [...allow] : Object.keys(TOOLS)
+  // A skill that declares a tool list narrows the toolkit; otherwise all tools are on.
+  const names = restricted ? [...allow] : Object.keys(TOOLS)
   return names.filter((n) => TOOLS[n]).map((n) => TOOLS[n].schema)
 }
 

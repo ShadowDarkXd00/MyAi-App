@@ -499,6 +499,7 @@ export interface VaultData {
 
 const LS_VAULT = 'shadowcode:vault'
 let memVault: VaultData | null = null
+let writeChain: Promise<unknown> = Promise.resolve()
 
 function b64(buf: ArrayBuffer | Uint8Array) {
   const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf)
@@ -532,22 +533,19 @@ export const vault = {
   },
   create(pin: string, data: VaultData): boolean {
     if (N?.vaultCreate) return !!N.vaultCreate(pin, JSON.stringify(data))
-    // browser: encrypt synchronously-ish
-    const salt = crypto.getRandomValues(new Uint8Array(16))
-    const iv = crypto.getRandomValues(new Uint8Array(12))
-    ;(async () => {
+    // browser: WebCrypto is async — queue writes so they land in order
+    memVault = data
+    writeChain = writeChain.then(async () => {
+      const salt = crypto.getRandomValues(new Uint8Array(16))
+      const iv = crypto.getRandomValues(new Uint8Array(12))
       const key = await deriveKey(pin, salt)
       const ct = await crypto.subtle.encrypt(
         { name: 'AES-GCM', iv },
         key,
-        new TextEncoder().encode(JSON.stringify(data)),
+        new TextEncoder().encode(JSON.stringify(memVault)),
       )
-      localStorage.setItem(
-        LS_VAULT,
-        JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) }),
-      )
-    })()
-    memVault = data
+      localStorage.setItem(LS_VAULT, JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) }))
+    })
     return true
   },
   unlock(pin: string): VaultData | null {
@@ -593,17 +591,17 @@ export const vault = {
     if (N?.vaultSave) return !!N.vaultSave(JSON.stringify(data))
     const pending = (window as any).__vaultPin as string | undefined
     if (!pending) return false
-    const salt = crypto.getRandomValues(new Uint8Array(16))
-    const iv = crypto.getRandomValues(new Uint8Array(12))
-    ;(async () => {
+    writeChain = writeChain.then(async () => {
+      const salt = crypto.getRandomValues(new Uint8Array(16))
+      const iv = crypto.getRandomValues(new Uint8Array(12))
       const key = await deriveKey(pending, salt)
       const ct = await crypto.subtle.encrypt(
         { name: 'AES-GCM', iv },
         key,
-        new TextEncoder().encode(JSON.stringify(data)),
+        new TextEncoder().encode(JSON.stringify(memVault)),
       )
       localStorage.setItem(LS_VAULT, JSON.stringify({ v: 1, salt: b64(salt), iv: b64(iv), ct: b64(ct) }))
-    })()
+    })
     return true
   },
   rememberPin(pin: string) {

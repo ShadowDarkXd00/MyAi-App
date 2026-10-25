@@ -119,6 +119,7 @@ const CHAT_DIR = `${DIR}/chats`
 const LS_KEY = 'shadowcode:app'
 
 const stopFlags = new Map<string, boolean>()
+let currentStreamId: string | null = null
 const approvalResolvers = new Map<string, (v: boolean) => void>()
 
 let saveTimer: any = null
@@ -349,6 +350,7 @@ export const useStore = create<State>((set, get) => ({
     })
 
     const streamId = newStreamId()
+    currentStreamId = streamId
     stopFlags.set(sessionId, false)
 
     // batched text flushing keeps typing smooth on device
@@ -489,7 +491,8 @@ export const useStore = create<State>((set, get) => ({
         })
         get().toast(friendlyError(finalError), 'bad')
       }
-      set({ busy: false, live: null, approvals: [], preview: get().preview })
+      currentStreamId = null
+      set({ busy: false, live: null, approvals: [] })
       void (live ? null : null)
       const finalMsgs = get().messages[sessionId] || []
       void persistSession(sessionId, finalMsgs)
@@ -502,7 +505,7 @@ export const useStore = create<State>((set, get) => ({
     const id = get().currentSessionId
     if (!id) return
     stopFlags.set(id, true)
-    abortChat('')
+    if (currentStreamId) abortChat(currentStreamId)
     get().toast('Stopped', 'info')
   },
 

@@ -146,7 +146,7 @@ export function StudioScreen() {
       <div className="row" style={{ gap: 8, padding: '0 4px 10px' }}>
         <button className="row grow" style={{ gap: 6, minWidth: 0 }} onClick={() => setTreeOpen(true)}>
           <FolderOpen size={16} style={{ color: 'var(--a2)' }} />
-          <span className="mono truncate" style={{ fontSize: 12.5 }}>{relPath(cwd)}</span>
+          <span className="mono truncate" style={{ fontSize: 12.5 }}>{cwd === homeDir ? '~' : '~/' + relPath(cwd)}</span>
           <ChevronRight size={13} className="muted" />
         </button>
         <Btn variant="ghost" icon size="sm" onClick={() => void refresh(cwd)} aria-label="Refresh">
